@@ -43,6 +43,10 @@ private:
 	bool m_bFirstBin;
 	unsigned short m_PackageSum;
 	unsigned int m_validLength;
+
+
+	unsigned short m_CurDownloadIndex;
+	unsigned char m_lastPackage;
 private slots:
 	void Start();
 	void ReceiveData();

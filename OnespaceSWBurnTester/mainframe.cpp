@@ -28,6 +28,10 @@ mainframe::mainframe(QWidget *parent)
 	m_PackageSum = 0;
 
 	m_validLength = 0;
+
+	m_CurDownloadIndex = 0;
+
+	m_lastPackage = 0;
 }
 
 mainframe::~mainframe()
@@ -116,6 +120,7 @@ void mainframe::OperateData(unsigned char* pMsg)
 			if (PackageCur >= (PackageSum - 1))
 			{
 				unsigned char validLength = pMsg[10];
+				m_lastPackage = validLength;
 				memcpy(m_pBuffer + PackageCur * 250, pMsg + 11, validLength);
 				m_validLength = (m_PackageSum - 1) * 250 + validLength;
 				m_pFile = fopen("temp.bin", "wb+");
@@ -134,7 +139,7 @@ void mainframe::OperateData(unsigned char* pMsg)
 	{
 		char msg[] = { 0x55,
 					0xAA,
-					0x10,
+					0x0A,
 					0x00,
 					0x01,
 					0xF7,
@@ -163,6 +168,24 @@ void mainframe::OperateData(unsigned char* pMsg)
 		msg[15] = (char)((crc32 >> 24) & 0x000000FF);
 
 		m_pSerial->write(msg, 18);
+	}
+	else if (pMsg[5] == 0xF4)
+	{
+		char msg[263] = { 0x55, 0xAA, 0xFF, 0x00, 0x01, 0xF5, 0x22, 0x00, 0x00, 0x00, 0xFA };
+		unsigned short requireIndex = pMsg[6] + pMsg[7] * 256;
+		msg[8] = (char)pMsg[6];
+		msg[9] = (char)pMsg[7];
+
+		if (requireIndex == (m_PackageSum - 1))	//last package
+		{
+			memcpy(&msg[11], m_pBuffer + 250 * requireIndex, m_lastPackage);
+		}
+		else
+		{
+			memcpy(&msg[11], m_pBuffer + 250 * requireIndex, 250);
+		}
+				
+		m_pSerial->write(msg, 263);
 	}
 }
 
